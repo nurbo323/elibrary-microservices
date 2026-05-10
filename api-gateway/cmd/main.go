@@ -15,8 +15,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"elibrary/api-gateway/internal/handler"
-	"elibrary/gen/bookpb"
-	"elibrary/gen/borrowpb"
 	"elibrary/gen/userpb"
 )
 
@@ -27,15 +25,15 @@ func main() {
 	borrowAddr := getenv("BORROW_GRPC_ADDR", "localhost:50053")
 
 	userConn := mustDial(userAddr, "user-service")
-	bookConn := mustDial(bookAddr, "book-service")
-	borrowConn := mustDial(borrowAddr, "borrow-service")
+	//bookConn := mustDial(bookAddr, "book-service")
+	//borrowConn := mustDial(borrowAddr, "borrow-service")
 	defer userConn.Close()
-	defer bookConn.Close()
-	defer borrowConn.Close()
+	//defer bookConn.Close()
+	//defer borrowConn.Close()
 
 	userH := handler.NewUserHandler(userpb.NewUserServiceClient(userConn))
-	bookH := handler.NewBookHandler(bookpb.NewBookServiceClient(bookConn))
-	borrowH := handler.NewBorrowHandler(borrowpb.NewBorrowServiceClient(borrowConn))
+	//bookH := handler.NewBookHandler(bookpb.NewBookServiceClient(bookConn))
+	//borrowH := handler.NewBorrowHandler(borrowpb.NewBorrowServiceClient(borrowConn))
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -48,8 +46,8 @@ func main() {
 
 	r.Route("/api", func(r chi.Router) {
 		userH.Register(r)
-		bookH.Register(r)
-		borrowH.Register(r)
+		//bookH.Register(r)
+		//borrowH.Register(r)
 	})
 
 	srv := &http.Server{Addr: httpAddr, Handler: r}
