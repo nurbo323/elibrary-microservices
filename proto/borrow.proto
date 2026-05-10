@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package borrow;
+
+option go_package = "elibrary/gen/borrowpb;borrowpb";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service BorrowService {
+  rpc BorrowBook(BorrowBookRequest) returns (BorrowResponse);
+  rpc ReturnBook(ReturnBookRequest) returns (BorrowResponse);
+  rpc GetBorrowById(GetBorrowByIdRequest) returns (BorrowResponse);
+  rpc ListBorrows(ListBorrowsRequest) returns (ListBorrowsResponse);
+  rpc GetUserBorrowHistory(GetUserBorrowHistoryRequest) returns (ListBorrowsResponse);
+  rpc GetActiveBorrows(GetActiveBorrowsRequest) returns (ListBorrowsResponse);
+
+  // Day 2:
+  rpc BorrowSpecificCopy(BorrowSpecificCopyRequest) returns (BorrowResponse);
+  rpc ReturnSpecificCopy(ReturnSpecificCopyRequest) returns (BorrowResponse);
+  rpc ExtendBorrowPeriod(ExtendBorrowPeriodRequest) returns (BorrowResponse);
+  rpc GetOverdueBorrows(GetOverdueBorrowsRequest) returns (ListBorrowsResponse);
+  rpc ReserveBookCopy(ReserveBookCopyRequest) returns (BorrowResponse);
+  rpc CancelReservation(CancelReservationRequest) returns (google.protobuf.Empty);
+}
+
+message Borrow {
+  string borrow_id = 1;
+  string exp_id = 2;
+  string user_id = 3;
+  string barcode = 4;
+  google.protobuf.Timestamp date_from = 5;
+  google.protobuf.Timestamp date_to = 6;
+  string status = 7;
+}
+
+message BorrowBookRequest { string user_id = 1; string book_id = 2; }
+message ReturnBookRequest { string borrow_id = 1; }
+message GetBorrowByIdRequest { string borrow_id = 1; }
+message ListBorrowsRequest { int32 limit = 1; int32 offset = 2; }
+message ListBorrowsResponse { repeated Borrow borrows = 1; int32 total = 2; }
+message GetUserBorrowHistoryRequest { string user_id = 1; int32 limit = 2; int32 offset = 3; }
+message GetActiveBorrowsRequest { int32 limit = 1; int32 offset = 2; }
+message BorrowResponse { Borrow borrow = 1; }
+
+message BorrowSpecificCopyRequest { string user_id = 1; string exp_id = 2; }
+message ReturnSpecificCopyRequest { string exp_id = 1; }
+message ExtendBorrowPeriodRequest { string borrow_id = 1; int32 extra_days = 2; }
+message GetOverdueBorrowsRequest { int32 limit = 1; int32 offset = 2; }
+message ReserveBookCopyRequest { string user_id = 1; string exp_id = 2; }
+message CancelReservationRequest { string borrow_id = 1; }
