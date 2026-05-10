@@ -1,0 +1,74 @@
+services:
+  postgres-users:
+    image: postgres:16
+    container_name: elib-postgres-users
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: elibrary_users
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_users_data:/var/lib/postgresql/data
+
+  postgres-books:
+    image: postgres:16
+    container_name: elib-postgres-books
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: elibrary_books
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_books_data:/var/lib/postgresql/data
+
+  postgres-borrows:
+    image: postgres:16
+    container_name: elib-postgres-borrows
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: elibrary_borrows
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_borrows_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: elib-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  nats:
+    image: nats:2.10
+    container_name: elib-nats
+    command: ["-js"]   # JetStream включен
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: elib-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: elib-mailhog
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # UI
+
+volumes:
+  postgres_users_data:
+  postgres_books_data:
+  postgres_borrows_data:
+  redis_data:

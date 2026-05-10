@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "elibrary/gen/userpb;userpb";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service UserService {
+  rpc CreateUser(CreateUserRequest) returns (UserResponse);
+  rpc GetUserById(GetUserByIdRequest) returns (UserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc LoginUser(LoginUserRequest) returns (LoginUserResponse);
+
+  // Day 2:
+  rpc SearchUsers(SearchUsersRequest) returns (ListUsersResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (google.protobuf.Empty);
+  rpc VerifyEmail(VerifyEmailRequest) returns (google.protobuf.Empty);
+  rpc GetUserProfile(GetUserByIdRequest) returns (UserProfileResponse);
+  rpc GetUserActiveBorrows(GetUserByIdRequest) returns (UserActiveBorrowsResponse);
+  rpc GetUserStatistics(GetUserByIdRequest) returns (UserStatisticsResponse);
+}
+
+message User {
+  string user_id = 1;
+  string name = 2;
+  string email = 3;
+  bool email_verified = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message CreateUserRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+}
+message GetUserByIdRequest { string user_id = 1; }
+message UpdateUserRequest {
+  string user_id = 1;
+  string name = 2;
+  string email = 3;
+}
+message DeleteUserRequest { string user_id = 1; }
+message ListUsersRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+message ListUsersResponse {
+  repeated User users = 1;
+  int32 total = 2;
+}
+message UserResponse { User user = 1; }
+
+message LoginUserRequest {
+  string email = 1;
+  string password = 2;
+}
+message LoginUserResponse {
+  string token = 1;
+  User user = 2;
+}
+
+// Day 2 messages (заглушки чтобы proto компилировался)
+message SearchUsersRequest { string query = 1; int32 limit = 2; int32 offset = 3; }
+message ChangePasswordRequest { string user_id = 1; string old_password = 2; string new_password = 3; }
+message VerifyEmailRequest { string user_id = 1; string code = 2; }
+message UserProfileResponse { User user = 1; int32 total_borrows = 2; }
+message UserActiveBorrowsResponse { repeated string borrow_ids = 1; }
+message UserStatisticsResponse {
+  int32 total_borrows = 1;
+  int32 active_borrows = 2;
+  int32 overdue_borrows = 3;
+}
