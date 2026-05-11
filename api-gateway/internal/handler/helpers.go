@@ -35,6 +35,8 @@ func WriteGrpcErr(w http.ResponseWriter, err error) {
 		WriteErr(w, http.StatusUnauthorized, st.Message())
 	case codes.PermissionDenied:
 		WriteErr(w, http.StatusForbidden, st.Message())
+	case codes.FailedPrecondition:
+		WriteErr(w, http.StatusPreconditionFailed, st.Message())
 	default:
 		WriteErr(w, http.StatusInternalServerError, st.Message())
 	}
