@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,11 +16,14 @@ import (
 
 	"elibrary/borrow-service/internal/client"
 	grpcdelivery "elibrary/borrow-service/internal/delivery/grpc"
+	"elibrary/borrow-service/internal/mailer"
 	"elibrary/borrow-service/internal/repository/postgres"
+	"elibrary/borrow-service/internal/subscriber"
 	"elibrary/borrow-service/internal/usecase"
 	"elibrary/gen/bookpb"
 	"elibrary/gen/borrowpb"
 	"elibrary/gen/userpb"
+	"elibrary/pkg/eventbus"
 )
 
 func main() {
@@ -27,6 +31,17 @@ func main() {
 	addr := getenv("GRPC_ADDR", ":50053")
 	userAddr := getenv("USER_GRPC_ADDR", "localhost:50051")
 	bookAddr := getenv("BOOK_GRPC_ADDR", "localhost:50052")
+	natsURL := getenv("NATS_URL", "nats://localhost:4222")
+	smtpHost := getenv("SMTP_HOST", "localhost")
+	smtpPortStr := getenv("SMTP_PORT", "1025")
+	smtpUser := getenv("SMTP_USER", "")
+	smtpPass := getenv("SMTP_PASS", "")
+	mailFrom := getenv("MAIL_FROM", "noreply@elibrary.local")
+
+	smtpPort, err := strconv.Atoi(smtpPortStr)
+	if err != nil {
+		log.Fatalf("invalid SMTP_PORT: %v", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -36,6 +51,7 @@ func main() {
 		log.Fatalf("connect db: %v", err)
 	}
 	defer pool.Close()
+
 	if err := pool.Ping(ctx); err != nil {
 		log.Fatalf("ping db: %v", err)
 	}
@@ -46,11 +62,28 @@ func main() {
 	defer userConn.Close()
 	defer bookConn.Close()
 
+	var pub *eventbus.Publisher
+	pub, err = eventbus.NewPublisher(natsURL)
+	if err != nil {
+		log.Printf("nats unavailable: %v (continuing without events)", err)
+	} else {
+		defer pub.Close()
+		log.Println("connected to nats")
+
+		sub := subscriber.New(pub)
+		if err := sub.Start(); err != nil {
+			log.Printf("subscriber start: %v", err)
+		} else {
+			log.Println("subscribed to user.created")
+		}
+	}
+
 	repo := postgres.NewBorrowRepo(pool)
 	userCli := client.NewUserClient(userpb.NewUserServiceClient(userConn))
 	bookCli := client.NewBookClient(bookpb.NewBookServiceClient(bookConn))
+	m := mailer.New(smtpHost, smtpPort, smtpUser, smtpPass, mailFrom)
 
-	uc := usecase.NewBorrowUsecase(repo, userCli, bookCli)
+	uc := usecase.NewBorrowUsecase(repo, userCli, bookCli, m, pub)
 	handler := grpcdelivery.NewBorrowHandler(uc)
 
 	srv := grpc.NewServer()
@@ -72,6 +105,7 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig
+
 	log.Println("shutting down")
 	srv.GracefulStop()
 }
