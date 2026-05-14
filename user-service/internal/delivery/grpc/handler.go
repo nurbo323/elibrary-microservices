@@ -33,6 +33,74 @@ func toProto(u *domain.User) *userpb.User {
 	}
 }
 
+func (h *UserHandler) SearchUsers(ctx context.Context, req *userpb.SearchUsersRequest) (*userpb.ListUsersResponse, error) {
+	users, total, err := h.uc.Search(ctx, req.GetQuery(), int(req.GetLimit()), int(req.GetOffset()))
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	out := make([]*userpb.User, len(users))
+	for i, u := range users {
+		out[i] = toProto(u)
+	}
+	return &userpb.ListUsersResponse{Users: out, Total: int32(total)}, nil
+}
+
+func (h *UserHandler) ChangePassword(ctx context.Context, req *userpb.ChangePasswordRequest) (*emptypb.Empty, error) {
+	if err := h.uc.ChangePassword(ctx, req.GetUserId(), req.GetOldPassword(), req.GetNewPassword()); err != nil {
+		return nil, mapErr(err)
+	}
+	return &emptypb.Empty{}, nil
+}
+
+// Исправленная версия VerifyEmail
+func (h *UserHandler) VerifyEmail(ctx context.Context, req *userpb.VerifyEmailRequest) (*emptypb.Empty, error) {
+	// Вызываем usecase, результат (_) нам не важен для ответа gRPC
+	_, err := h.uc.VerifyEmail(ctx, req.GetToken())
+	if err != nil {
+		return nil, mapErr(err)
+	}
+
+	// Возвращаем ПРАВИЛЬНЫЙ тип: emptypb.Empty
+	return &emptypb.Empty{}, nil
+}
+func (h *UserHandler) GetUserProfile(ctx context.Context, req *userpb.GetUserByIdRequest) (*userpb.UserProfileResponse, error) {
+	u, total, active, err := h.uc.GetProfile(ctx, req.GetUserId())
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	return &userpb.UserProfileResponse{
+		User: toProto(u), TotalBorrows: int32(total), ActiveBorrows: int32(active),
+	}, nil
+}
+
+func (h *UserHandler) GetUserActiveBorrows(ctx context.Context, req *userpb.GetUserByIdRequest) (*userpb.UserActiveBorrowsResponse, error) {
+	list, err := h.uc.GetActiveBorrows(ctx, req.GetUserId())
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	out := make([]*userpb.ActiveBorrow, 0, len(list))
+	for _, b := range list {
+		out = append(out, &userpb.ActiveBorrow{
+			BorrowId: b.BorrowID, BookId: b.BookID,
+			DateFrom: b.DateFrom, DateTo: b.DateTo, Status: b.Status,
+		})
+	}
+	return &userpb.UserActiveBorrowsResponse{Borrows: out}, nil
+}
+
+func (h *UserHandler) GetUserStatistics(ctx context.Context, req *userpb.GetUserByIdRequest) (*userpb.UserStatisticsResponse, error) {
+	stats, err := h.uc.GetStatistics(ctx, req.GetUserId())
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	return &userpb.UserStatisticsResponse{
+		TotalBorrows:    int32(stats.Total),
+		ActiveBorrows:   int32(stats.Active),
+		ReturnedBorrows: int32(stats.Returned),
+		OverdueBorrows:  int32(stats.Overdue),
+	}, nil
+}
+
 func mapErr(err error) error {
 	switch {
 	case errors.Is(err, domain.ErrUserNotFound):
@@ -42,6 +110,10 @@ func mapErr(err error) error {
 	case errors.Is(err, domain.ErrInvalidPassword):
 		return status.Error(codes.Unauthenticated, err.Error())
 	case errors.Is(err, domain.ErrInvalidArgument):
+		return status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, domain.ErrInvalidToken):
+		return status.Error(codes.NotFound, err.Error())
+	case errors.Is(err, domain.ErrSamePassword):
 		return status.Error(codes.InvalidArgument, err.Error())
 	default:
 		return status.Error(codes.Internal, err.Error())
