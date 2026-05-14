@@ -8,17 +8,20 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 service BookService {
+  // Day 1
   rpc CreateBook(CreateBookRequest) returns (BookResponse);
   rpc GetBookById(GetBookByIdRequest) returns (BookResponse);
   rpc UpdateBook(UpdateBookRequest) returns (BookResponse);
   rpc DeleteBook(DeleteBookRequest) returns (google.protobuf.Empty);
   rpc ListBooks(ListBooksRequest) returns (ListBooksResponse);
-  rpc SearchBooks(SearchBooksRequest) returns (ListBooksResponse);
-
   rpc AddBookCopy(AddBookCopyRequest) returns (BookCopyResponse);
+
+  // Day 2
+  rpc SearchBooks(SearchBooksRequest) returns (ListBooksResponse);
   rpc GetBookCopies(GetBookCopiesRequest) returns (ListBookCopiesResponse);
   rpc UpdateCopyStatus(UpdateCopyStatusRequest) returns (BookCopyResponse);
-  rpc GetAvailableCopies(GetBookByIdRequest) returns (ListBookCopiesResponse);
+  // ИСПРАВЛЕНО: Теперь использует GetAvailableCopiesRequest вместо GetBookByIdRequest
+  rpc GetAvailableCopies(GetAvailableCopiesRequest) returns (ListBookCopiesResponse);
   rpc GetBooksByAuthor(GetBooksByAuthorRequest) returns (ListBooksResponse);
   rpc GetBooksByYear(GetBooksByYearRequest) returns (ListBooksResponse);
 }
@@ -31,26 +34,90 @@ message Book {
   string status = 5;
   google.protobuf.Timestamp created_at = 6;
 }
+
 message BookCopy {
   string exp_id = 1;
   string book_id = 2;
   string status = 3;   // AVAILABLE / BORROWED / RESERVED / LOST / RETURNED
 }
 
-message CreateBookRequest { string name = 1; repeated string authors = 2; int32 year = 3; }
-message GetBookByIdRequest { string book_id = 1; }
-message UpdateBookRequest { string book_id = 1; string name = 2; repeated string authors = 3; int32 year = 4; }
-message DeleteBookRequest { string book_id = 1; }
-message ListBooksRequest { int32 limit = 1; int32 offset = 2; }
-message ListBooksResponse { repeated Book books = 1; int32 total = 2; }
-message SearchBooksRequest { string query = 1; int32 limit = 2; int32 offset = 3; }
-message BookResponse { Book book = 1; }
+// --- Requests & Responses ---
 
-message AddBookCopyRequest { string book_id = 1; }
-message GetBookCopiesRequest { string book_id = 1; }
-message ListBookCopiesResponse { repeated BookCopy copies = 1; }
-message UpdateCopyStatusRequest { string exp_id = 1; string status = 2; }
-message BookCopyResponse { BookCopy copy = 1; }
+message CreateBookRequest {
+  string name = 1;
+  repeated string authors = 2;
+  int32 year = 3;
+}
 
-message GetBooksByAuthorRequest { string author = 1; int32 limit = 2; int32 offset = 3; }
-message GetBooksByYearRequest { int32 year = 1; int32 limit = 2; int32 offset = 3; }
+message GetBookByIdRequest {
+  string book_id = 1;
+}
+
+message UpdateBookRequest {
+  string book_id = 1;
+  string name = 2;
+  repeated string authors = 3;
+  int32 year = 4;
+}
+
+message DeleteBookRequest {
+  string book_id = 1;
+}
+
+message ListBooksRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message ListBooksResponse {
+  repeated Book books = 1;
+  int32 total = 2;
+}
+
+message BookResponse {
+  Book book = 1;
+}
+
+message AddBookCopyRequest {
+  string book_id = 1;
+}
+
+message BookCopyResponse {
+  BookCopy copy = 1;
+}
+
+// Day 2 specific messages
+message SearchBooksRequest {
+  string query = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message GetBookCopiesRequest {
+  string book_id = 1;
+}
+
+message ListBookCopiesResponse {
+  repeated BookCopy copies = 1;
+}
+
+message UpdateCopyStatusRequest {
+  string exp_id = 1;
+  string status = 2;
+}
+
+message GetAvailableCopiesRequest {
+  string book_id = 1;
+}
+
+message GetBooksByAuthorRequest {
+  string author = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message GetBooksByYearRequest {
+  int32 year = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
