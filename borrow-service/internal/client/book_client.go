@@ -28,3 +28,25 @@ func (b *BookClient) Exists(ctx context.Context, bookID string) error {
 	}
 	return err
 }
+
+func (b *BookClient) GetBook(ctx context.Context, bookID string) (*bookpb.Book, error) {
+	resp, err := b.c.GetBookById(ctx, &bookpb.GetBookByIdRequest{BookId: bookID})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, domain.ErrBookNotFound
+		}
+		return nil, err
+	}
+	return resp.GetBook(), nil
+}
+
+func (b *BookClient) UpdateCopyStatus(ctx context.Context, expID, statusValue string) (*bookpb.BookCopy, error) {
+	resp, err := b.c.UpdateCopyStatus(ctx, &bookpb.UpdateCopyStatusRequest{
+		ExpId:  expID,
+		Status: statusValue,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetCopy(), nil
+}
