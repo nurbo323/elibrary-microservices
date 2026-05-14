@@ -51,3 +51,15 @@ type UserCreatedEvent struct {
 	VerificationToken string    `json:"verification_token"`
 	CreatedAt         time.Time `json:"created_at"`
 }
+
+type MsgHandler func(subject string, data []byte)
+
+func (p *Publisher) Subscribe(subject string, handler MsgHandler) error {
+	_, err := p.nc.Subscribe(subject, func(msg *nats.Msg) {
+		handler(msg.Subject, msg.Data)
+	})
+	if err != nil {
+		return fmt.Errorf("subscribe %s: %w", subject, err)
+	}
+	return nil
+}
