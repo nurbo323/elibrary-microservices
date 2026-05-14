@@ -15,9 +15,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"elibrary/api-gateway/internal/handler"
-	"elibrary/gen/bookpb"
-	"elibrary/gen/borrowpb"
-	"elibrary/gen/userpb"
+
+	// ИСПРАВЛЕНО: Добавлен правильный путь к твоим сгенерированным файлам
+	"elibrary/elibrary/gen/bookpb"
+	"elibrary/elibrary/gen/borrowpb"
+	"elibrary/elibrary/gen/userpb"
 )
 
 func main() {
