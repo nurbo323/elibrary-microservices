@@ -64,13 +64,43 @@ message LoginUserResponse {
 }
 
 // Day 2 messages (заглушки чтобы proto компилировался)
-message SearchUsersRequest { string query = 1; int32 limit = 2; int32 offset = 3; }
-message ChangePasswordRequest { string user_id = 1; string old_password = 2; string new_password = 3; }
-message VerifyEmailRequest { string user_id = 1; string code = 2; }
-message UserProfileResponse { User user = 1; int32 total_borrows = 2; }
-message UserActiveBorrowsResponse { repeated string borrow_ids = 1; }
+message SearchUsersRequest {
+  string query = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ChangePasswordRequest {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message VerifyEmailRequest {
+  string token = 1;
+}
+
+message UserProfileResponse {
+  User user = 1;
+  int32 total_borrows = 2;
+  int32 active_borrows = 3;
+}
+
+message ActiveBorrow {
+  string borrow_id = 1;
+  string book_id = 2;
+  string date_from = 3;
+  string date_to = 4;
+  string status = 5;
+}
+
+message UserActiveBorrowsResponse {
+  repeated ActiveBorrow borrows = 1;
+}
+
 message UserStatisticsResponse {
   int32 total_borrows = 1;
   int32 active_borrows = 2;
-  int32 overdue_borrows = 3;
+  int32 returned_borrows = 3;
+  int32 overdue_borrows = 4;
 }
