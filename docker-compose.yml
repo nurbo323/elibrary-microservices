@@ -49,7 +49,7 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
-    command: ["-js","-m","8222"]
+    command: ["-js", "-m", "8222"]
     restart: unless-stopped
 
   pgadmin:
@@ -142,6 +142,16 @@ services:
       BORROW_GRPC_ADDR: borrow-service:50053
     ports:
       - "8080:8080"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: elib-frontend
+    depends_on:
+      - api-gateway
+    ports:
+      - "3000:80"
 
 volumes:
   postgres_users_data:
