@@ -8,4 +8,6 @@ var (
 	ErrBookNotFound    = errors.New("book not found")
 	ErrInvalidArgument = errors.New("invalid argument")
 	ErrNotActive       = errors.New("borrow is not active")
+	ErrCopyNotAvailable = errors.New("copy is not available")
+	ErrCopyAlreadyBorrowed = errors.New("copy is already borrowed")
 )

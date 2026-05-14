@@ -28,3 +28,14 @@ func (u *UserClient) Exists(ctx context.Context, userID string) error {
 	}
 	return err
 }
+
+func (u *UserClient) GetUser(ctx context.Context, userID string) (*userpb.User, error) {
+	resp, err := u.c.GetUserById(ctx, &userpb.GetUserByIdRequest{UserId: userID})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, domain.ErrUserNotFound
+		}
+		return nil, err
+	}
+	return resp.GetUser(), nil
+}

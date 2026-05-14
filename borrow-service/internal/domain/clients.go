@@ -1,14 +1,19 @@
 package domain
 
-import "context"
+import (
+	"context"
 
-// UserClient — внешний контракт для проверки существования пользователя.
-// Реализация в internal/client/user_client.go.
+	"elibrary/gen/bookpb"
+	"elibrary/gen/userpb"
+)
+
 type UserClient interface {
-	Exists(ctx context.Context, userID string) error // returns ErrUserNotFound if not found
+	Exists(ctx context.Context, userID string) error
+	GetUser(ctx context.Context, userID string) (*userpb.User, error)
 }
 
-// BookClient — внешний контракт для проверки существования книги.
 type BookClient interface {
-	Exists(ctx context.Context, bookID string) error // returns ErrBookNotFound if not found
+	Exists(ctx context.Context, bookID string) error
+	GetBook(ctx context.Context, bookID string) (*bookpb.Book, error)
+	UpdateCopyStatus(ctx context.Context, expID, status string) (*bookpb.BookCopy, error)
 }
