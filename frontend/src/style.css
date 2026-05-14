@@ -1,0 +1,148 @@
+body {
+	background: #f4f6fa;
+	color: #222;
+	font-family: 'Segoe UI', Arial, sans-serif;
+	margin: 0;
+	padding: 0;
+}
+
+.app {
+	max-width: 1100px;
+	margin: 32px auto;
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+	padding: 32px 24px 24px 24px;
+}
+
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 2px solid #e3e8f0;
+	margin-bottom: 24px;
+	padding-bottom: 12px;
+}
+.header h1 {
+	color: #1a3a6b;
+	margin: 0 0 4px 0;
+	font-size: 2.1rem;
+}
+.header p {
+	color: #4a5a7a;
+	margin: 0;
+	font-size: 1rem;
+}
+.header button {
+	background: #1a3a6b;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	padding: 8px 18px;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+.header button:hover {
+	background: #2451a6;
+}
+
+.message {
+	background: #eaf6ff;
+	color: #1a3a6b;
+	border-left: 4px solid #1a3a6b;
+	padding: 10px 18px;
+	margin: 18px 0 0 0;
+	border-radius: 6px;
+	font-size: 1.05rem;
+}
+
+.grid {
+	display: flex;
+	gap: 24px;
+	margin: 32px 0 0 0;
+	flex-wrap: wrap;
+}
+
+.card {
+	background: #f8fafc;
+	border-radius: 10px;
+	box-shadow: 0 1px 4px rgba(26,58,107,0.04);
+	padding: 22px 18px 18px 18px;
+	flex: 1 1 260px;
+	min-width: 260px;
+	max-width: 340px;
+	margin-bottom: 18px;
+}
+.card.wide {
+	max-width: 100%;
+}
+.card h2 {
+	color: #2451a6;
+	margin-top: 0;
+	font-size: 1.2rem;
+}
+
+form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+input {
+	padding: 8px 10px;
+	border: 1px solid #bfcbe0;
+	border-radius: 5px;
+	font-size: 1rem;
+	background: #fff;
+	transition: border 0.2s;
+}
+input:focus {
+	border: 1.5px solid #2451a6;
+	outline: none;
+}
+button[type="submit"], .card button, .borrow-row button {
+	background: #2451a6;
+	color: #fff;
+	border: none;
+	border-radius: 5px;
+	padding: 8px 14px;
+	font-size: 1rem;
+	margin-top: 6px;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+button[type="submit"]:hover, .card button:hover, .borrow-row button:hover {
+	background: #1a3a6b;
+}
+
+.tables {
+	margin-top: 36px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 24px;
+}
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 10px;
+}
+.borrow-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 18px;
+	background: #f0f4fa;
+	border-radius: 6px;
+	padding: 10px 12px;
+}
+pre {
+	margin: 0;
+	font-size: 0.98rem;
+	background: none;
+	color: #222;
+}
+.empty {
+	color: #888;
+	font-style: italic;
+	margin: 10px 0 0 0;
+}
