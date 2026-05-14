@@ -16,10 +16,9 @@ import (
 
 	"elibrary/api-gateway/internal/handler"
 
-	// ИСПРАВЛЕНО: Добавлен правильный путь к твоим сгенерированным файлам
-	"elibrary/elibrary/gen/bookpb"
-	"elibrary/elibrary/gen/borrowpb"
-	"elibrary/elibrary/gen/userpb"
+	"elibrary/gen/bookpb"
+	"elibrary/gen/borrowpb"
+	"elibrary/gen/userpb"
 )
 
 func main() {

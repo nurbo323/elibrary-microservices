@@ -19,8 +19,7 @@ import (
 	"elibrary/book-service/internal/usecase"
 	"elibrary/pkg/eventbus"
 
-	// ИСПРАВЛЕНО: Путь изменен на elibrary/elibrary/gen...
-	"elibrary/elibrary/gen/bookpb"
+	"elibrary/gen/bookpb"
 )
 
 func main() {

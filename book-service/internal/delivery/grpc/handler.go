@@ -13,7 +13,7 @@ import (
 	"elibrary/book-service/internal/usecase"
 
 	// ВАЖНО: Убедись, что этот путь совпадает с тем, где лежат твои файлы
-	"elibrary/elibrary/gen/bookpb"
+	"elibrary/gen/bookpb"
 )
 
 type BookHandler struct {

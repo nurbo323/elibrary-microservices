@@ -7,8 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	// ИСПРАВЛЕНО: Путь импорта соответствует твоей структуре
-	"elibrary/elibrary/gen/bookpb"
+	"elibrary/gen/bookpb"
 )
 
 type BookHandler struct {
