@@ -7,47 +7,68 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"elibrary/book-service/internal/cache"
 	grpcdelivery "elibrary/book-service/internal/delivery/grpc"
 	"elibrary/book-service/internal/repository/postgres"
 	"elibrary/book-service/internal/usecase"
-	"elibrary/gen/bookpb"
+	"elibrary/pkg/eventbus"
+
+	// ИСПРАВЛЕНО: Путь изменен на elibrary/elibrary/gen...
+	"elibrary/elibrary/gen/bookpb"
 )
 
 func main() {
-	// Подключаемся к базе elibrary_books на порту 5434 [cite: 3464]
 	dsn := getenv("DATABASE_URL", "postgres://postgres:postgres@localhost:5434/elibrary_books?sslmode=disable")
 	addr := getenv("GRPC_ADDR", ":50052")
+	natsURL := getenv("NATS_URL", "nats://localhost:4222")
+	redisAddr := getenv("REDIS_ADDR", "localhost:6379")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Настройка пула соединений с БД [cite: 3464]
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		log.Fatalf("connect db: %v", err)
 	}
 	defer pool.Close()
-
 	if err := pool.Ping(ctx); err != nil {
 		log.Fatalf("ping db: %v", err)
 	}
 	log.Println("connected to postgres")
 
-	// Инициализация слоев (Clean Architecture) [cite: 3464, 3482]
+	var c *cache.BookCache
+	if bc, err := cache.New(redisAddr, 5*time.Minute); err != nil {
+		log.Printf("redis unavailable: %v (continuing without cache)", err)
+	} else {
+		c = bc
+		defer c.Close()
+		log.Println("connected to redis")
+	}
+
+	pub, err := eventbus.NewPublisher(natsURL)
+	if err != nil {
+		log.Printf("nats unavailable: %v (continuing without events)", err)
+	} else {
+		defer pub.Close()
+		log.Println("connected to nats")
+	}
+
 	bookRepo := postgres.NewBookRepo(pool)
 	copyRepo := postgres.NewCopyRepo(pool)
-	uc := usecase.NewBookUsecase(bookRepo, copyRepo)
+
+	// Используем New (так как в твоем коде конструктор называется New)
+	uc := usecase.New(bookRepo, copyRepo, c, pub)
 	handler := grpcdelivery.NewBookHandler(uc)
 
-	// Создание и настройка gRPC сервера [cite: 3464]
 	srv := grpc.NewServer()
 	bookpb.RegisterBookServiceServer(srv, handler)
-	reflection.Register(srv) // Нужно для работы grpcurl [cite: 3464]
+	reflection.Register(srv)
 
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -61,11 +82,9 @@ func main() {
 		}
 	}()
 
-	// Ожидание сигнала на остановку (Ctrl+C) [cite: 3464]
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig
-
 	log.Println("shutting down")
 	srv.GracefulStop()
 }
