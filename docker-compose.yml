@@ -44,12 +44,13 @@ services:
       - redis_data:/data
 
   nats:
-    image: nats:2.10
-    container_name: elib-nats
-    command: ["-js"]   # JetStream включен
+    image: nats:2.10-alpine
+    container_name: nats
     ports:
-      - "4222:4222"
-      - "8222:8222"
+      - "4222:4222"   # client
+      - "8222:8222"   # monitoring http
+    command: ["-js", "-m", "8222"]
+    restart: unless-stopped
 
   pgadmin:
     image: dpage/pgadmin4
@@ -61,11 +62,12 @@ services:
       - "5050:80"
 
   mailhog:
-    image: mailhog/mailhog
-    container_name: elib-mailhog
+    image: mailhog/mailhog:latest
+    container_name: mailhog
     ports:
       - "1025:1025"   # SMTP
-      - "8025:8025"   # UI
+      - "8025:8025"   # web UI
+    restart: unless-stopped
 
 volumes:
   postgres_users_data:
