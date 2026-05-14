@@ -47,9 +47,9 @@ services:
     image: nats:2.10-alpine
     container_name: nats
     ports:
-      - "4222:4222"   # client
-      - "8222:8222"   # monitoring http
-    command: ["-js", "-m", "8222"]
+      - "4222:4222"
+      - "8222:8222"
+    command: ["-js","-m","8222"]
     restart: unless-stopped
 
   pgadmin:
@@ -65,9 +65,83 @@ services:
     image: mailhog/mailhog:latest
     container_name: mailhog
     ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # web UI
+      - "1025:1025"
+      - "8025:8025"
     restart: unless-stopped
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: elib-user-service
+    depends_on:
+      - postgres-users
+      - nats
+      - mailhog
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres-users:5432/elibrary_users?sslmode=disable
+      GRPC_ADDR: :50051
+      BORROW_GRPC_ADDR: borrow-service:50053
+      NATS_URL: nats://nats:4222
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+    ports:
+      - "50051:50051"
+
+  book-service:
+    build:
+      context: .
+      dockerfile: book-service/Dockerfile
+    container_name: elib-book-service
+    depends_on:
+      - postgres-books
+      - redis
+      - nats
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres-books:5432/elibrary_books?sslmode=disable
+      GRPC_ADDR: :50052
+      NATS_URL: nats://nats:4222
+      REDIS_ADDR: redis:6379
+    ports:
+      - "50052:50052"
+
+  borrow-service:
+    build:
+      context: .
+      dockerfile: borrow-service/Dockerfile
+    container_name: elib-borrow-service
+    depends_on:
+      - postgres-borrows
+      - user-service
+      - book-service
+      - nats
+      - mailhog
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres-borrows:5432/elibrary_borrows?sslmode=disable
+      USER_GRPC_ADDR: user-service:50051
+      BOOK_GRPC_ADDR: book-service:50052
+      GRPC_ADDR: :50053
+      NATS_URL: nats://nats:4222
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+    ports:
+      - "50053:50053"
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: elib-api-gateway
+    depends_on:
+      - user-service
+      - book-service
+      - borrow-service
+    environment:
+      USER_GRPC_ADDR: user-service:50051
+      BOOK_GRPC_ADDR: book-service:50052
+      BORROW_GRPC_ADDR: borrow-service:50053
+    ports:
+      - "8080:8080"
 
 volumes:
   postgres_users_data:
