@@ -103,21 +103,29 @@ func (r *BookRepo) List(ctx context.Context, limit, offset int) ([]*domain.Book,
 	return books, total, rows.Err()
 }
 
-// --- Day 2 Methods ---
+// --- Day 2 Methods (Исправленные) ---
 
 func (r *BookRepo) Search(ctx context.Context, query string, limit, offset int) ([]*domain.Book, int, error) {
 	pattern := "%" + query + "%"
-	const countQ = `SELECT COUNT(*) FROM books WHERE name ILIKE $1 OR authors ILIKE $1`
+
+	// Исправлено: используем EXISTS + unnest для поиска внутри массива авторов
+	const countQ = `
+       SELECT COUNT(*) FROM books 
+       WHERE name ILIKE $1 
+       OR EXISTS (SELECT 1 FROM unnest(authors) a WHERE a ILIKE $1)`
+
 	var total int
 	if err := r.pool.QueryRow(ctx, countQ, pattern).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count search: %w", err)
 	}
 
 	const q = `
-		SELECT book_id, name, authors, year, status, created_at
-		FROM books
-		WHERE name ILIKE $1 OR authors ILIKE $1
-		ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+       SELECT book_id, name, authors, year, status, created_at
+       FROM books
+       WHERE name ILIKE $1 
+       OR EXISTS (SELECT 1 FROM unnest(authors) a WHERE a ILIKE $1)
+       ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+
 	rows, err := r.pool.Query(ctx, q, pattern, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("search books: %w", err)
@@ -127,8 +135,9 @@ func (r *BookRepo) Search(ctx context.Context, query string, limit, offset int) 
 	books := make([]*domain.Book, 0, limit)
 	for rows.Next() {
 		b := &domain.Book{}
+		// Обрати внимание: тут Scan должен соответствовать количеству полей в SELECT выше
 		if err := rows.Scan(&b.ID, &b.Name, &b.Authors, &b.Year, &b.Status, &b.CreatedAt); err != nil {
-			return nil, 0, fmt.Errorf("scan: %w", err)
+			return nil, 0, fmt.Errorf("scan search result: %w", err)
 		}
 		books = append(books, b)
 	}
@@ -137,22 +146,34 @@ func (r *BookRepo) Search(ctx context.Context, query string, limit, offset int) 
 
 func (r *BookRepo) ListByAuthor(ctx context.Context, author string, limit, offset int) ([]*domain.Book, int, error) {
 	pattern := "%" + author + "%"
-	const countQ = `SELECT COUNT(*) FROM books WHERE authors ILIKE $1`
+
+	// Исправлено: поиск внутри массива через unnest
+	const countQ = `
+        SELECT COUNT(*) FROM books 
+        WHERE EXISTS (SELECT 1 FROM unnest(authors) a WHERE a ILIKE $1)`
+
 	var total int
 	if err := r.pool.QueryRow(ctx, countQ, pattern).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count by author: %w", err)
 	}
-	const q = `SELECT book_id, name, authors, year, status, created_at FROM books WHERE authors ILIKE $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+
+	const q = `
+        SELECT book_id, name, authors, year, status, created_at 
+        FROM books 
+        WHERE EXISTS (SELECT 1 FROM unnest(authors) a WHERE a ILIKE $1) 
+        ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+
 	rows, err := r.pool.Query(ctx, q, pattern, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("by author: %w", err)
 	}
 	defer rows.Close()
+
 	books := make([]*domain.Book, 0, limit)
 	for rows.Next() {
 		b := &domain.Book{}
 		if err := rows.Scan(&b.ID, &b.Name, &b.Authors, &b.Year, &b.Status, &b.CreatedAt); err != nil {
-			return nil, 0, fmt.Errorf("scan: %w", err)
+			return nil, 0, fmt.Errorf("scan author result: %w", err)
 		}
 		books = append(books, b)
 	}
@@ -165,17 +186,24 @@ func (r *BookRepo) ListByYear(ctx context.Context, year, limit, offset int) ([]*
 	if err := r.pool.QueryRow(ctx, countQ, year).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count by year: %w", err)
 	}
-	const q = `SELECT book_id, name, authors, year, status, created_at FROM books WHERE year = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+
+	const q = `
+        SELECT book_id, name, authors, year, status, created_at 
+        FROM books 
+        WHERE year = $1 
+        ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+
 	rows, err := r.pool.Query(ctx, q, year, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("by year: %w", err)
 	}
 	defer rows.Close()
+
 	books := make([]*domain.Book, 0, limit)
 	for rows.Next() {
 		b := &domain.Book{}
 		if err := rows.Scan(&b.ID, &b.Name, &b.Authors, &b.Year, &b.Status, &b.CreatedAt); err != nil {
-			return nil, 0, fmt.Errorf("scan: %w", err)
+			return nil, 0, fmt.Errorf("scan year result: %w", err)
 		}
 		books = append(books, b)
 	}
