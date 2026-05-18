@@ -60,6 +60,10 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "5050:80"
+    depends_on:
+      - postgres-users
+      - postgres-books
+      - postgres-borrows
 
   mailhog:
     image: mailhog/mailhog:latest
@@ -84,7 +88,10 @@ services:
       BORROW_GRPC_ADDR: borrow-service:50053
       NATS_URL: nats://nats:4222
       SMTP_HOST: mailhog
-      SMTP_PORT: 1025
+      SMTP_PORT: "1025"
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      MAIL_FROM: noreply@elibrary.local
     ports:
       - "50051:50051"
 
@@ -123,7 +130,10 @@ services:
       GRPC_ADDR: :50053
       NATS_URL: nats://nats:4222
       SMTP_HOST: mailhog
-      SMTP_PORT: 1025
+      SMTP_PORT: "1025"
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      MAIL_FROM: noreply@elibrary.local
     ports:
       - "50053:50053"
 

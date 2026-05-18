@@ -21,13 +21,41 @@ func NewBorrowRepo(pool *pgxpool.Pool) *BorrowRepo {
 
 func (r *BorrowRepo) Create(ctx context.Context, b *domain.Borrow) error {
 	const q = `
-		INSERT INTO borrows (borrow_id, user_id, book_id, exp_id, barcode, date_from, date_to, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO borrows (
+			borrow_id,
+			user_id,
+			book_id,
+			exp_id,
+			barcode,
+			date_from,
+			date_to,
+			status
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 		RETURNING created_at, updated_at`
 
-	err := r.pool.QueryRow(ctx, q,
-		b.ID, b.UserID, b.BookID, b.ExpID, b.Barcode, b.DateFrom, b.DateTo, b.Status,
-	).Scan(&b.CreatedAt, &b.UpdatedAt)
+	var expID any = nil
+
+	if b.ExpID != "" {
+		expID = b.ExpID
+	}
+
+	err := r.pool.QueryRow(
+		ctx,
+		q,
+		b.ID,
+		b.UserID,
+		b.BookID,
+		expID,
+		b.Barcode,
+		b.DateFrom,
+		b.DateTo,
+		b.Status,
+	).Scan(
+		&b.CreatedAt,
+		&b.UpdatedAt,
+	)
+
 	if err != nil {
 		return fmt.Errorf("create borrow: %w", err)
 	}
@@ -57,9 +85,11 @@ func (r *BorrowRepo) GetByID(ctx context.Context, id string) (*domain.Borrow, er
 		&b.CreatedAt,
 		&b.UpdatedAt,
 	)
+
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, domain.ErrBorrowNotFound
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("get borrow: %w", err)
 	}
@@ -91,9 +121,11 @@ func (r *BorrowRepo) GetActiveByExpID(ctx context.Context, expID string) (*domai
 		&b.CreatedAt,
 		&b.UpdatedAt,
 	)
+
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, domain.ErrBorrowNotFound
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("get active borrow by exp_id: %w", err)
 	}
@@ -116,11 +148,19 @@ func (r *BorrowRepo) Update(ctx context.Context, b *domain.Borrow) error {
 		WHERE borrow_id = $1
 		RETURNING updated_at`
 
-	err := r.pool.QueryRow(ctx, q,
+	var expID any = nil
+
+	if b.ExpID != "" {
+		expID = b.ExpID
+	}
+
+	err := r.pool.QueryRow(
+		ctx,
+		q,
 		b.ID,
 		b.UserID,
 		b.BookID,
-		b.ExpID,
+		expID,
 		b.Barcode,
 		b.DateFrom,
 		b.DateTo,
@@ -131,6 +171,7 @@ func (r *BorrowRepo) Update(ctx context.Context, b *domain.Borrow) error {
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.ErrBorrowNotFound
 	}
+
 	if err != nil {
 		return fmt.Errorf("update borrow: %w", err)
 	}
@@ -145,9 +186,11 @@ func (r *BorrowRepo) UpdateStatus(ctx context.Context, id, newStatus string) err
 		WHERE borrow_id = $1`
 
 	tag, err := r.pool.Exec(ctx, q, id, newStatus)
+
 	if err != nil {
 		return fmt.Errorf("update borrow status: %w", err)
 	}
+
 	if tag.RowsAffected() == 0 {
 		return domain.ErrBorrowNotFound
 	}
@@ -156,9 +199,10 @@ func (r *BorrowRepo) UpdateStatus(ctx context.Context, id, newStatus string) err
 }
 
 func (r *BorrowRepo) List(ctx context.Context, limit, offset int) ([]*domain.Borrow, int, error) {
-	return r.queryList(ctx,
+	return r.queryList(
+		ctx,
 		`SELECT COUNT(*) FROM borrows`,
-		`SELECT borrow_id, user_id, book_id, COALESCE(exp_id::text, ''), barcode,
+		`SELECT borrow_id, user_id, book_id, COALESCE(exp_id::text,''), barcode,
 		        date_from, date_to, returned_at, status, created_at, updated_at
 		 FROM borrows
 		 ORDER BY created_at DESC
@@ -168,12 +212,13 @@ func (r *BorrowRepo) List(ctx context.Context, limit, offset int) ([]*domain.Bor
 }
 
 func (r *BorrowRepo) ListByUser(ctx context.Context, userID string, limit, offset int) ([]*domain.Borrow, int, error) {
-	return r.queryList(ctx,
-		`SELECT COUNT(*) FROM borrows WHERE user_id = $1`,
-		`SELECT borrow_id, user_id, book_id, COALESCE(exp_id::text, ''), barcode,
+	return r.queryList(
+		ctx,
+		`SELECT COUNT(*) FROM borrows WHERE user_id=$1`,
+		`SELECT borrow_id, user_id, book_id, COALESCE(exp_id::text,''), barcode,
 		        date_from, date_to, returned_at, status, created_at, updated_at
 		 FROM borrows
-		 WHERE user_id = $1
+		 WHERE user_id=$1
 		 ORDER BY created_at DESC
 		 LIMIT $2 OFFSET $3`,
 		[]any{userID, limit, offset},
@@ -182,12 +227,13 @@ func (r *BorrowRepo) ListByUser(ctx context.Context, userID string, limit, offse
 }
 
 func (r *BorrowRepo) ListActive(ctx context.Context, limit, offset int) ([]*domain.Borrow, int, error) {
-	return r.queryList(ctx,
-		`SELECT COUNT(*) FROM borrows WHERE status = 'ACTIVE'`,
-		`SELECT borrow_id, user_id, book_id, COALESCE(exp_id::text, ''), barcode,
+	return r.queryList(
+		ctx,
+		`SELECT COUNT(*) FROM borrows WHERE status='ACTIVE'`,
+		`SELECT borrow_id, user_id, book_id, COALESCE(exp_id::text,''), barcode,
 		        date_from, date_to, returned_at, status, created_at, updated_at
 		 FROM borrows
-		 WHERE status = 'ACTIVE'
+		 WHERE status='ACTIVE'
 		 ORDER BY date_to ASC
 		 LIMIT $1 OFFSET $2`,
 		[]any{limit, offset},
@@ -195,12 +241,13 @@ func (r *BorrowRepo) ListActive(ctx context.Context, limit, offset int) ([]*doma
 }
 
 func (r *BorrowRepo) ListOverdue(ctx context.Context, limit, offset int) ([]*domain.Borrow, int, error) {
-	return r.queryList(ctx,
-		`SELECT COUNT(*) FROM borrows WHERE status = 'ACTIVE' AND date_to < NOW()`,
-		`SELECT borrow_id, user_id, book_id, COALESCE(exp_id::text, ''), barcode,
+	return r.queryList(
+		ctx,
+		`SELECT COUNT(*) FROM borrows WHERE status='ACTIVE' AND date_to < NOW()`,
+		`SELECT borrow_id, user_id, book_id, COALESCE(exp_id::text,''), barcode,
 		        date_from, date_to, returned_at, status, created_at, updated_at
 		 FROM borrows
-		 WHERE status = 'ACTIVE' AND date_to < NOW()
+		 WHERE status='ACTIVE' AND date_to < NOW()
 		 ORDER BY date_to ASC
 		 LIMIT $1 OFFSET $2`,
 		[]any{limit, offset},
@@ -214,6 +261,7 @@ func (r *BorrowRepo) queryList(
 	listArgs []any,
 	countArgs ...any,
 ) ([]*domain.Borrow, int, error) {
+
 	var total int
 
 	if err := r.pool.QueryRow(ctx, countQ, countArgs...).Scan(&total); err != nil {
@@ -221,9 +269,11 @@ func (r *BorrowRepo) queryList(
 	}
 
 	rows, err := r.pool.Query(ctx, listQ, listArgs...)
+
 	if err != nil {
 		return nil, 0, fmt.Errorf("list borrows: %w", err)
 	}
+
 	defer rows.Close()
 
 	out := make([]*domain.Borrow, 0)
